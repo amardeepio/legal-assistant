@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
+import { ensurePdfJsDomPolyfills } from "@/lib/pdf-dom-polyfill";
 import {
   EXTRACT_LIMITS,
   checkRateLimit,
@@ -33,6 +33,10 @@ function fileKind(file: File): ExtractableKind | null {
 
 /** Extract raw text from a PDF buffer (up to MAX_PDF_PAGES). */
 async function extractPdfText(buffer: Buffer): Promise<{ text: string; pages: number }> {
+  // pdf.js needs `DOMMatrix` before it is evaluated; the native canvas module
+  // that normally provides it isn't in the standalone/Cloud Run bundle.
+  ensurePdfJsDomPolyfills();
+  const { PDFParse } = await import("pdf-parse");
   const parser = new PDFParse({ data: buffer });
   try {
     const result = await parser.getText({ first: MAX_PDF_PAGES });

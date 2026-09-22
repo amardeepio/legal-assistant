@@ -75,7 +75,7 @@ describe("POST /api/analyze", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as Record<string, unknown>;
     expect(body["action"]).toBe("simplify");
-    expect(body["model"]).toBe("groq/compound");
+    expect(body["model"]).toBe("openai/gpt-oss-120b");
     expect(typeof body["markdown"]).toBe("string");
     expect(createMock).toHaveBeenCalledTimes(1);
   });

@@ -74,7 +74,7 @@ describe("POST /api/analyze/stream", () => {
       (doneBlock?.split("\n")[1] ?? "").replace(/^data:\s*/, ""),
     ) as Record<string, unknown>;
     expect(payload["action"]).toBe("simplify");
-    expect(payload["model"]).toBe("groq/compound");
+    expect(payload["model"]).toBe("openai/gpt-oss-120b");
   });
 
   it("emits an error event when Compound fails", async () => {

@@ -1,4 +1,15 @@
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16.3-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16.3" height="28" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5" height="28" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" height="28" />
+  <img src="https://img.shields.io/badge/Vitest-5-6E9F18?logo=vitest&logoColor=white" alt="Vitest 5" height="28" />
+  <img src="https://img.shields.io/badge/pnpm-10-F69220?logo=pnpm&logoColor=white" alt="pnpm 10" height="28" />
+  <img src="https://img.shields.io/badge/Google_Cloud-Run-4285F4?logo=googlecloud&logoColor=white" alt="Google Cloud Run" height="28" />
+</p>
+
 # LexClarity — AI Legal Information Studio for India
+
+[![CI](https://github.com/amardeepio/legal-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/amardeepio/legal-assistant/actions/workflows/ci.yml)
 
 GenAI-powered legal information assistant that makes Indian legal documents
 understandable: simplify contracts into plain language, X-ray risks, check them
@@ -29,12 +40,15 @@ your document, location and language follow you between pages.
 | 💼 Advocate Brief | One-click PDF handoff packet (matter summary, timeline, key terms, risks, legal issues, evidence checklist, sharp questions) plus find-an-advocate by practice area and city (NALSA/DLSA, Tele-Law, Nyaya Bandhu, Bar Council verification) |
 | 🧾 Stamp Duty | Offline state-wise stamp duty + registration fee estimate (Maharashtra Art. 36A leave & licence, sale deeds in MH/DL/KA/TN/GJ/WB/UP), compulsory-registration rule, e-registration steps with official portal, and a live web-verified check of current rates |
 
-- **Grounded in current Indian law** via Groq Compound's agentic web search
-  (Contract Act 1872, CPA 2019, DPDP Act 2023, Arbitration & Conciliation Act
-  1996, BNS/BNSS 2023, state Stamp Acts, e-Daakhil, NALSA…)
+- **Reasoned from current Indian law** — every prompt pins answers to Indian
+  statutes (Contract Act 1872, CPA 2019, DPDP Act 2023, Arbitration &
+  Conciliation Act 1996, BNS/BNSS 2023, state Stamp Acts, e-Daakhil, NALSA…).
+  With a Compound-enabled key, answers are additionally verified against live
+  web sources (set `PRIMARY_MODEL` in `src/lib/groq.ts` to a `groq/compound`
+  model to enable this)
 - **Live streaming responses** — every tool streams Server-Sent Events from
   `POST /api/analyze/stream` (`progress` → `token` → `done`), so the first
-  words render in ~1s instead of after the full ~25s Compound run. Agent
+  words render in ~1s instead of after the full buffered run. Agent
   progress labels ("Reading… → Verifying against live sources… →
   Drafting…") show what's happening; if the stream drops mid-flight the app
   falls back to the buffered `POST /api/analyze` automatically
@@ -68,11 +82,13 @@ your document, location and language follow you between pages.
 - **pnpm** · **Next.js 16** (App Router) · **TypeScript 5** (strict:
   `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`,
   `verbatimModuleSyntax`, zero `any`) · **Tailwind CSS 4**
-- **Groq Compound** (`groq/compound`, fallback `groq/compound-mini`) via
-  `groq-sdk` — agentic web search + visit-website + code execution
+- **Groq** — primary `openai/gpt-oss-120b`, fallback `openai/gpt-oss-20b`,
+  via `groq-sdk`. To use the agentic `groq/compound` models (built-in web
+  search / visit-website / code execution), set `PRIMARY_MODEL` and
+  `FALLBACK_MODEL` in `src/lib/groq.ts` — they require account access
 - **Google Cloud Translation v2** (server-side) for regional-language output
 - Request validation with `zod` (discriminated union over the 8 actions)
-- **Full test suite: 180 tests, 22 files** — Vitest + Testing Library, see
+- **Full test suite: 185 tests, 22 files** — Vitest + Testing Library, see
   [Testing](#testing)
 
 ## Testing
@@ -80,8 +96,12 @@ your document, location and language follow you between pages.
 ```bash
 pnpm test             # run once (CI mode)
 pnpm test:watch       # watch mode while developing
-pnpm test:coverage    # with V8 coverage report (text + html)
+pnpm test:coverage    # V8 coverage (text + json-summary + html)
 ```
+
+CI (`.github/workflows/ci.yml`) runs lint, typecheck, `pnpm test:coverage`, and
+a production build on every push/PR. It writes the coverage table to the run's
+summary and uploads the HTML report as a `coverage-report` artifact.
 
 No network calls: the Groq SDK and `pdf-parse` are mocked, so the suite runs
 offline in ~2 seconds. What's covered:
@@ -90,7 +110,7 @@ offline in ~2 seconds. What's covered:
 | ---- | ----- |
 | `src/lib/legal.test.ts` | All 5 zod request schemas (valid/invalid), union routing, `truncate`, sample-doc integrity |
 | `src/lib/optimize.test.ts` | Token estimates, PDF de-noising (page markers, repeated headers), keyword retrieval (order, fallback, empty docs) |
-| `src/lib/groq.test.ts` | API-key resolution, Compound success/usage/grounding detection, `compound-mini` fallback, per-action token caps, excerpt prompts, India guardrail, streaming deltas/grounding/fallback via `runCompoundStream` |
+| `src/lib/groq.test.ts` | API-key resolution, model success/usage/grounding detection, smaller-model fallback, per-action token caps, excerpt prompts, India guardrail, streaming deltas/grounding/fallback via `runCompoundStream` |
 | `src/app/api/analyze/route.test.ts` | Non-JSON/short-doc 400s, missing-key 401, success payload, upstream 502, invalid-key 401 mapping, 429 past budget, BYOK bypass |
 | `src/app/api/analyze/stream/route.test.ts` | Invalid-payload 400, missing-key 401, `progress`/`token`/`done` SSE sequence, `error` event on upstream failure |
 | `src/app/api/extract-pdf/route.test.ts` | Missing/non-PDF/empty/oversize rejections, scanned-PDF 422, normalised-text success, parser-crash 422, 429 past budget, `.docx` success (null pages) / empty / oversize / crash, legacy `.doc` 415 |
@@ -161,7 +181,7 @@ flowchart LR
 
   subgraph Server["Next.js route handlers (Node runtime)"]
     EX["POST /api/extract-pdf<br/>rate limit → pdf-parse → normalise"]
-    AN["POST /api/analyze<br/>rate limit → zod → prompts → Compound"]
+    AN["POST /api/analyze<br/>rate limit → zod → prompts → Groq"]
     ST["POST /api/analyze/stream<br/>SSE: progress → tokens → done"]
     TR["POST /api/translate<br/>rate limit → zod → chunk → batch"]
   end
@@ -174,7 +194,7 @@ flowchart LR
     CLIENTLIB["diff.ts · stamp-duty.ts · report.ts<br/>(browser-only, no network)"]
   end
 
-  GROQAPI(["Groq Compound<br/>groq/compound → compound-mini"])
+  GROQAPI(["Groq API<br/>gpt-oss-120b → gpt-oss-20b"])
   GT(["Google Cloud<br/>Translation v2"])
 
   UI -- "PDF (multipart)" --> EX
@@ -204,11 +224,11 @@ flowchart LR
      format, reading level and location hint.
    - For long documents in Ask, `retrieveRelevant` sends only the most
      relevant excerpts.
-   - `runCompoundStream` calls `groq/compound` with `stream: true` (output-token
-     limit per action, `groq/compound-mini` fallback) and forwards each content
-     delta as an SSE `token` event, with `progress` events for agent status
-     (reading → verifying against live sources → drafting) and a final `done`
-     event carrying the full `{ action, markdown, model, grounded }`.
+   - `runCompoundStream` calls the Groq API (`openai/gpt-oss-120b` with an
+     `openai/gpt-oss-20b` fallback, output-token limit per action) and forwards
+     each content delta as an SSE `token` event, with `progress` events for
+     agent status (reading → verifying against live sources → drafting) and a
+     final `done` event carrying the full `{ action, markdown, model, grounded }`.
    - The client renders tokens as they arrive and finalises on `done`. If the
      stream drops mid-flight, it retries once against the buffered
      `POST /api/analyze`, which runs the same validation and `runCompound`
@@ -236,7 +256,7 @@ flowchart LR
 | Server-only API calls | `GROQ_API_KEY` / `GOOGLE_TRANSLATE_API_KEY` stay on the server; the browser only calls same-origin routes |
 | zod at every boundary | Request bodies, the Google response, and client-side response checks all validate data shapes, so bad data fails with a clear 4xx instead of breaking later |
 | Markdown as the result format | One format works for display, translation, copy, `.md` export and printing. The renderer escapes everything before adding its own tags |
-| Fallback model | `groq/compound-mini` keeps the app working when the main model errors or returns nothing |
+| Fallback model | `openai/gpt-oss-20b` keeps the app working when the primary `openai/gpt-oss-120b` errors or returns nothing |
 | No database | Nothing sensitive is stored on the server. The saved library lives in the user's localStorage and the live session in their IndexedDB — both stay on-device |
 | Rate limits at the route, not the client | A server-side sliding-window limiter caps paid-API spend per IP; the UI shows the budget and honours `Retry-After`, so limits can't be bypassed by editing client code. Both `/api/analyze` and `/api/analyze/stream` share the same budget |
 | Streaming-first with buffered fallback | Tokens render as they arrive for <1s perceived latency; a mid-stream failure retries once against the non-streaming endpoint instead of showing an error |
@@ -257,7 +277,7 @@ src/
     globals.css                 # Tailwind 4 tokens (light/dark), typography, mobile safe-areas
     icon.svg                    # Favicon (scales of justice)
     api/
-      analyze/route.ts          # POST /api/analyze — rate limit → validate → Groq Compound
+      analyze/route.ts          # POST /api/analyze — rate limit → validate → Groq
       analyze/stream/route.ts   # POST /api/analyze/stream — same, but SSE (progress → tokens → done)
       extract-pdf/route.ts      # POST /api/extract-pdf — rate limit → PDF/.docx → cleaned text
       translate/route.ts        # POST /api/translate — rate limit → Google Cloud Translation
@@ -280,7 +300,7 @@ src/
     use-dismiss.ts              # Outside-click / Escape handling for popovers
   lib/
     legal.ts                    # zod schemas, types, limits, Indian sample documents
-    groq.ts                     # Compound client, India guardrail, per-action prompts
+    groq.ts                     # Groq client, India guardrail, per-action prompts
     optimize.ts                 # PDF de-noising, token estimates, keyword retrieval
     translate.ts                # Language list, chunking, cache keys, client helper
     recent.ts                   # localStorage: saved library (pin/rename/search) + consent
@@ -326,7 +346,7 @@ event: progress
 data: {"phase":"drafting","label":"Drafting your answer…"}
 
 event: done
-data: {"action":"simplify","markdown":"## TL;DR\n…","model":"groq/compound","grounded":false}
+data: {"action":"simplify","markdown":"## TL;DR\n…","model":"openai/gpt-oss-120b","grounded":false}
 ```
 
 Failures mid-stream arrive as `event: error` with
@@ -347,8 +367,8 @@ paragraph-chunked into a single batched request. Responds with
 
 ## Cost optimisation (less LLM spend per analysis)
 
-Output tokens cost ~4× input tokens on Compound, and each web-tool call is
-billed per request — so the app minimises all three (`src/lib/optimize.ts`,
+Output tokens cost ~4× input tokens, and with a Compound model each web-tool
+call is billed per request — so the app minimises all three (`src/lib/optimize.ts`,
 `src/lib/groq.ts`):
 
 1. **De-noise PDFs at extraction** — page markers (`-- 3 of 12 --`), repeated
@@ -368,8 +388,8 @@ billed per request — so the app minimises all three (`src/lib/optimize.ts`,
    shows document length against the 60k-character limit before you hit Run.
 
 Further levers (not yet enabled): response caching by document hash, routing
-trivial summarisation to `groq/compound-mini` first, and `compound_custom`
-with tools toggled per action.
+trivial summarisation to the smaller `gpt-oss-20b` model first, and
+`compound_custom` with tools toggled per action.
 
 ## Roadmap — 10 features to make it richer
 
@@ -406,14 +426,72 @@ with tools toggled per action.
    pan-India non-compete flagged under **s.27, Indian Contract Act 1872**.
 2. Switch to **Compare**, load the rent agreement as Document B, paste any
    variant as A → Run for the side-by-side verdict table.
-3. Ask tab → click the e-Daakhil preset → Run to show web-grounded answers
-   with current Indian procedure.
+3. Ask tab → click the e-Daakhil preset → Run to show an India-law-grounded
+   answer with practical next steps (consumer commission, NALSA legal aid).
 
-## Deploy
+## Deployment
 
-Set `GROQ_API_KEY` in your host's environment variables (Vercel, etc.) and
-deploy as a standard Next.js app. The key never ships to the browser — all
-Groq calls run server-side in `/api/analyze`, behind per-IP rate limits
-(5 analyses/min, 30/hour). The limiter is in-memory per instance: fine for a
-single server, but point it at Redis/Upstash if you scale horizontally (see
+The app is a standard Next.js server and ships with a `Dockerfile` for
+container hosts. Set `GROQ_API_KEY` (and, for translation,
+`GOOGLE_TRANSLATE_API_KEY`) in the host's environment variables. Keys never
+reach the browser — every call runs server-side in `/api/analyze`,
+`/api/analyze/stream`, `/api/translate` and `/api/extract-pdf`, behind per-IP
+rate limits.
+
+### Docker
+
+```bash
+docker build -t lexclarity .
+docker run --rm -p 8080:8080 \
+  -e GROQ_API_KEY=gsk_... \
+  -e GOOGLE_TRANSLATE_API_KEY=AIza... \
+  lexclarity
+# open http://localhost:8080
+```
+
+The image serves Next's `output: "standalone"` build (Node 22 + pnpm via
+Corepack). Three things keep server-side PDF parsing working in the slim
+bundle — see `next.config.ts` and `src/lib/pdf-dom-polyfill.ts`:
+
+- `serverExternalPackages: ["pdf-parse"]` keeps pdf.js out of the bundler so
+  Turbopack doesn't try to bundle its worker chunks.
+- `outputFileTracingIncludes` copies the full `pdf-parse` / `pdfjs-dist`
+  packages into the standalone output, because the pdf.js worker is loaded by
+  path at runtime and is otherwise missed by dependency tracing.
+- `src/lib/pdf-dom-polyfill.ts` provides the `DOMMatrix` global that pdf.js
+  reads at module load. The optional native `@napi-rs/canvas` package that
+  normally supplies it isn't bundled; text-only extraction never renders, so
+  the pure-JS polyfill is enough.
+
+### Google Cloud Run
+
+Cloud Run builds the `Dockerfile` remotely with Cloud Build — no local Docker
+daemon required:
+
+```bash
+gcloud run deploy lexclarity \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --port 8080 \
+  --memory 1Gi \
+  --timeout 300 \
+  --set-env-vars GROQ_API_KEY=gsk_...,GOOGLE_TRANSLATE_API_KEY=AIza...
+```
+
+Use a generous `--timeout` (e.g. 300s): streaming analyses run for the life of
+the SSE response, and a Compound web-search run can take ~25s or more. For
+production, keep keys out of the service config by using Secret Manager:
+
+```bash
+printf '%s' 'gsk_...' | gcloud secrets create groq-api-key --data-file=-
+
+gcloud run deploy lexclarity --source . --region us-central1 \
+  --set-secrets GROQ_API_KEY=groq-api-key:latest
+```
+
+### Scaling notes
+
+The rate limiter (`src/lib/rate-limit.ts`) is in-memory per instance: fine for
+a single server, but point it at Redis/Upstash if you scale horizontally (see
 the comment in `src/lib/rate-limit.ts`).

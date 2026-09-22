@@ -4,14 +4,15 @@ import { truncate } from "@/lib/legal";
 import { normalizeExtractedText, retrieveRelevant } from "@/lib/optimize";
 
 /**
- * Groq Compound integration.
- * Model `groq/compound` is an agentic system (GPT-OSS 120B + Llama 4 Scout
- * with built-in web search, visit-website, code execution) — ideal for
- * grounding legal explanations in current law.
+ * Groq integration.
+ * Primary model `openai/gpt-oss-120b` with `openai/gpt-oss-20b` fallback.
+ * The `groq/compound` agentic models (built-in web search / visit-website)
+ * are only available to accounts with Compound access — switch PRIMARY_MODEL
+ * back to `groq/compound` if that access is enabled.
  */
 
-export const COMPOUND_MODEL = "groq/compound";
-export const COMPOUND_FALLBACK_MODEL = "groq/compound-mini";
+export const PRIMARY_MODEL = "openai/gpt-oss-120b";
+export const FALLBACK_MODEL = "openai/gpt-oss-20b";
 
 /**
  * Cost controls.
@@ -286,7 +287,7 @@ export async function runCompound(
   apiKey: string,
 ): Promise<CompoundResult> {
   const messages = buildMessages(req).map((m) => ({ ...m }));
-  const models: readonly string[] = [COMPOUND_MODEL, COMPOUND_FALLBACK_MODEL];
+  const models: readonly string[] = [PRIMARY_MODEL, FALLBACK_MODEL];
   let lastError: unknown = undefined;
 
   for (const model of models) {
@@ -323,7 +324,7 @@ export async function runCompound(
   }
   throw lastError instanceof Error
     ? lastError
-    : new Error("Groq Compound request failed");
+    : new Error("Groq request failed");
 }
 
 export function resolveApiKey(explicit: string | undefined): string | undefined {
@@ -374,7 +375,7 @@ export async function runCompoundStream(
   callbacks: CompoundStreamCallbacks,
 ): Promise<CompoundResult> {
   const messages = buildMessages(req).map((m) => ({ ...m }));
-  const models: readonly string[] = [COMPOUND_MODEL, COMPOUND_FALLBACK_MODEL];
+  const models: readonly string[] = [PRIMARY_MODEL, FALLBACK_MODEL];
   let lastError: unknown = undefined;
 
   for (const model of models) {
@@ -411,5 +412,5 @@ export async function runCompoundStream(
   }
   throw lastError instanceof Error
     ? lastError
-    : new Error("Groq Compound request failed");
+    : new Error("Groq request failed");
 }

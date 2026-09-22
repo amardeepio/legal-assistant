@@ -65,7 +65,7 @@ describe("runCompound", () => {
       "test-key",
     );
     expect(r.markdown).toContain("TL;DR");
-    expect(r.model).toBe("groq/compound");
+    expect(r.model).toBe("openai/gpt-oss-120b");
     expect(r.grounded).toBe(false);
     expect(r.usage).toEqual({
       promptTokens: 10,
@@ -97,7 +97,7 @@ describe("runCompound", () => {
     expect(r.grounded).toBe(true);
   });
 
-  it("falls back to compound-mini when the primary model fails", async () => {
+  it("falls back to the smaller model when the primary model fails", async () => {
     createMock
       .mockRejectedValueOnce(new Error("primary down"))
       .mockResolvedValueOnce(completion("Fallback ok"));
@@ -105,7 +105,7 @@ describe("runCompound", () => {
       { action: "simplify", document: DOC },
       "test-key",
     );
-    expect(r.model).toBe("groq/compound-mini");
+    expect(r.model).toBe("openai/gpt-oss-20b");
     expect(r.markdown).toBe("Fallback ok");
   });
 
@@ -148,7 +148,7 @@ describe("runCompoundStream", () => {
     );
     expect(r.markdown).toBe("Hello world");
     expect(seen).toEqual(["Hello", " world"]);
-    expect(r.model).toBe("groq/compound");
+    expect(r.model).toBe("openai/gpt-oss-120b");
     expect(r.usage).toBeUndefined();
     const args = createMock.mock.calls[0]?.[0] as
       | { stream?: boolean }
@@ -174,7 +174,7 @@ describe("runCompoundStream", () => {
     expect(r.markdown).toBe("Rates: ₹600");
   });
 
-  it("falls back to compound-mini when the primary stream fails", async () => {
+  it("falls back to the smaller model when the primary stream fails", async () => {
     createMock
       .mockRejectedValueOnce(new Error("primary down"))
       .mockResolvedValueOnce(chunkStream([textChunk("Fallback ok")]));
@@ -183,7 +183,7 @@ describe("runCompoundStream", () => {
       "test-key",
       { onToken: () => {} },
     );
-    expect(r.model).toBe("groq/compound-mini");
+    expect(r.model).toBe("openai/gpt-oss-20b");
     expect(r.markdown).toBe("Fallback ok");
   });
 
