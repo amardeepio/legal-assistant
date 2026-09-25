@@ -9,7 +9,11 @@
 
 # LexClarity — AI Legal Information Studio for India
 
+[![Live App](https://img.shields.io/badge/Live_App-Open_LexClarity-4285F4?logo=googlecloud&logoColor=white)](https://legal-assistant-301104363527.us-central1.run.app/)
 [![CI](https://github.com/amardeepio/legal-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/amardeepio/legal-assistant/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-75.5%25_lines-yellow)](https://github.com/amardeepio/legal-assistant/actions/workflows/ci.yml)
+
+🌐 **Live app:** https://legal-assistant-301104363527.us-central1.run.app/
 
 GenAI-powered legal information assistant that makes Indian legal documents
 understandable: simplify contracts into plain language, X-ray risks, check them
@@ -430,6 +434,8 @@ trivial summarisation to the smaller `gpt-oss-20b` model first, and
    answer with practical next steps (consumer commission, NALSA legal aid).
 
 ## Deployment
+
+🌐 **Live deployment:** https://legal-assistant-301104363527.us-central1.run.app/ (Google Cloud Run, `us-central1`)
 
 The app is a standard Next.js server and ships with a `Dockerfile` for
 container hosts. Set `GROQ_API_KEY` (and, for translation,
